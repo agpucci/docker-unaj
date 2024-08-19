@@ -1,0 +1,36 @@
+{
+	#
+}
+
+# You can define all the server settings here in one big file, but I like to 
+# split them up into smaller files and folders (I have *a lot* of sites)
+
+# Sites at localhost
+import oficial/*.caddy
+
+# Sites at *.example.com
+import example.com/*.caddy
+
+# Sites at *.multi.com
+import multi.com/*.caddy
+
+localhost:8080 {
+    root * /wordpress-multi
+    encode zstd gzip
+
+    @forbidden {
+        not path /wp-includes/ms-files.php
+        path /wp-admin/includes/*.php
+        path /wp-includes/*.php
+        path /wp-config.php
+        path /wp-content/uploads/*.php
+        path /.user.ini
+        path /wp-content/debug.log
+    }
+    respond @forbidden "Access denied" 403
+
+	# blah:9000 has to match whatever the wordpress container is called in 
+	# the docker compose file
+    php_fastcgi wordpress-multi:9000
+    file_server
+}

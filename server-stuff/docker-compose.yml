@@ -1,0 +1,99 @@
+version: "3.8"
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 8080:8080
+      - 443:443
+    volumes:
+      # Map the local sites folder to the internal /var/www/html folder
+      # This lets you put any static sites here
+      - "../sites/:/var/www/html/"
+      # Map the local caddyfiles folder to the internal /etc/caddy folder
+      - "./caddyfiles/:/etc/caddy/"
+      
+      # Map the wordpress folder to /wordpress inside Caddy
+      # Technically this could also just go in ../sites, but I like treating 
+      # this folder more like a configuration folder and not having it be in 
+      # the same place as the static sites
+      - "./wordpress-oficial/:/wordpress-oficial/"
+      - "./wordpress-multi/:/wordpress-multi/"
+
+      # Caddy needs to mount /data and /config for persisted data
+      - "./caddy/data/:/data/"
+      - "./caddy/config/:/config/"
+  
+  wordpress-oficial:
+    image: wordpress:php8.1-fpm-alpine
+    restart: unless-stopped
+    ports:
+      - '8010:80'
+    depends_on:
+      - wp-db-oficial
+    env_file:
+      - "./secrets/wordpress-oficial.env"
+    volumes:
+      # Map the wordpress folder to /wordpress inside the PHP container
+      # This normally would go to /var/html/www inside the container, but since 
+      # we're pointing it somewhere else in Caddy, it needs to match here
+      - "./wordpress-oficial:/wordpress-oficial"
+
+  wordpress-multi:
+    image: wordpress:php8.1-fpm-alpine
+    restart: unless-stopped
+    ports:
+      - '8020:80'
+    depends_on:
+      - wp-db-multi
+    env_file:
+      - "./secrets/wordpress-multi.env"
+    volumes:
+      # Map the wordpress folder to /wordpress inside the PHP container
+      # This normally would go to /var/html/www inside the container, but since 
+      # we're pointing it somewhere else in Caddy, it needs to match here
+      - "./wordpress-multi:/wordpress-multi"
+  
+  wp-db-oficial:
+    image: mariadb
+    restart: unless-stopped
+    env_file:
+      - "./secrets/db-wordpress-oficial.env"
+    volumes:
+      - "./db/db-wordpress-oficial:/var/lib/mysql-oficial"
+
+  wp-db-multi:
+    image: mariadb
+    restart: unless-stopped
+    env_file:
+      - "./secrets/db-wordpress-multi.env"
+    volumes:
+      - "./db/db-wordpress-multi:/var/lib/mysql-multi"
+
+  phpmyadmin-oficial:
+    links:
+      - wp-db-oficial
+    depends_on:
+      - wp-db-oficial
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - '8091:80'
+    environment:
+      PMA_HOST: wp-db-oficial
+      MYSQL_ROOT_PASSWORD: password
+
+  phpmyadmin-multi:
+    links:
+      - wp-db-multi
+    depends_on:
+      - wp-db-multi
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - '8092:80'
+    environment:
+      PMA_HOST: wp-db-multi
+      MYSQL_ROOT_PASSWORD: password
