@@ -57,6 +57,10 @@ sitio1.localhost:8080 {
     file_server
 }
 
+sitio1.localhost {
+    reverse_proxy sitio1.localhost:8080
+}
+
 sitio2.localhost:8080 {
     root * /wordpress-multi
     encode zstd gzip
@@ -76,4 +80,8 @@ sitio2.localhost:8080 {
     # the docker compose file
     php_fastcgi wordpress-multi:9000
     file_server
+}
+
+sitio2.localhost {
+    reverse_proxy sitio2.localhost:8080
 }

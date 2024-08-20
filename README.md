@@ -3,6 +3,7 @@
 
 # CONFIG MULTISITIO
 define( 'WP_ALLOW_MULTISITE', true );
+
 define( 'MULTISITE', true );
 define( 'SUBDOMAIN_INSTALL', true );
 define( 'DOMAIN_CURRENT_SITE', 'localhost:8080' );
